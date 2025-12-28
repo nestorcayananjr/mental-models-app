@@ -4,11 +4,11 @@ import patternController from '../controllers/patternController.js';
 
 const router: Router = express.Router();
 
-router.get("/", patternController.getHelloWorld, (_req: Request, res: Response) => {
+router.get("/", patternController.getAllPatterns, (_req: Request, res: Response) => {
     res.status(200).json(res.locals)
 })
 
-router.get("/all", patternController.getAllPatterns, (_req: Request, res: Response) => {
+router.get("/:id", patternController.getOnePattern, (req: Request, res: Response) => {
     res.status(200).json(res.locals)
 })
 

@@ -15,7 +15,6 @@ const isValidConfidenceValue = (status: string) => {
 
 const buildPatternDataObject = (data: PatternI) => {
     const patternDTO = {} as PatternI
-    console.log(data.confidence)
 
     if (validateString(data.name)) patternDTO.name = data.name;
     if (validateString(data.category)) patternDTO.category = data.category;
@@ -37,12 +36,15 @@ const buildPatternDataObject = (data: PatternI) => {
     return patternDTO;
 }
 
-const patternController = {
-    getHelloWorld: async (req: Request, res: Response, next: NextFunction) => {
-        res.locals.payload = "Hello World";
-        next();
-    },
+const isValidId = (val: unknown): val is string => {
+    return val !== null &&  val !== undefined && typeof val === "string";
+}
 
+const throwError = (val: string): never => {
+    throw new Error(BASE_ERROR_MESSAGE + val + ": must pass a pattern id")
+}
+
+const patternController = {
     getAllPatterns: async (req: Request, res: Response, next: NextFunction) => {
         try {
             const allPatterns = await prisma.pattern.findMany();
@@ -51,6 +53,28 @@ const patternController = {
         } catch (e: unknown) {
             res.status(404)
             throw new Error(BASE_ERROR_MESSAGE +  "getAllPatterns" + (e instanceof Error ? e.message : ""))
+        }
+    },
+
+    getOnePattern: async (req: Request, res: Response, next: NextFunction) => {
+        const patternId = req.params.id;
+
+        if (!isValidId(patternId)){
+            throwError("getOnePattern")
+            return;
+        }
+
+        try {
+            const pattern = await prisma.pattern.findFirst({
+                where: {
+                    id: patternId
+                }
+            })
+            res.locals.pattern = pattern;
+            next();
+        } catch(e: unknown) {
+            res.status(404)
+            throw new Error(BASE_ERROR_MESSAGE + "getOnePattern" + (e instanceof Error ? e.message : ""))
         }
     },
 
@@ -71,8 +95,10 @@ const patternController = {
         const patternObject = buildPatternDataObject(req.body)
         const patternId = req.params.id
 
-        if (patternId === null || typeof patternId !== "string") throw new Error(BASE_ERROR_MESSAGE + "updatePattern: must pass a pattern id")
-
+        if (!isValidId(patternId)){
+            throwError("updatePattern")
+            return;
+        }
         try {
             const updatedPattern = await prisma.pattern.update({
                 where: {
@@ -92,7 +118,10 @@ const patternController = {
     deletePattern: async (req: Request, res: Response, next: NextFunction) => {
         const patternId = req.params.id
 
-        if (patternId === null || typeof patternId !== "string") throw new Error(BASE_ERROR_MESSAGE + "updatePattern: must pass a pattern id")
+        if (!isValidId(patternId)){
+            throwError("deletePattern")
+            return;
+        }
 
         try {
             await prisma.pattern.delete({
